@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Tracker — JW Marriott Houston Downtown</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f5f7; --card: #fff; --border: #e0e3e9; --text: #1a1d23;
+  --sub: #6b7280; --accent: #1a56db; --green: #16a34a; --red: #dc2626;
+  --yellow: #d97706; --green-bg: #f0fdf4; --red-bg: #fff1f1; --yellow-bg: #fffbeb;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ── */
+header { background: #1a1d23; color: white; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { font-size: 1rem; font-weight: 700; }
+header p  { font-size: .72rem; color: #9ca3af; margin-top: 1px; }
+.hdr-right { display: flex; gap: 8px; align-items: center; }
+
+/* ── BUTTONS ── */
+.btn { padding: 7px 14px; border-radius: 7px; font-size: .8rem; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s; display: inline-flex; align-items: center; gap: 5px; }
+.btn:hover { opacity: .85; }
+.btn-primary  { background: var(--accent); color: white; }
+.btn-green    { background: var(--green); color: white; }
+.btn-outline  { background: white; color: var(--text); border: 1px solid var(--border); }
+.btn-danger   { background: #fee2e2; color: var(--red); border: 1px solid #fca5a5; }
+.btn-ghost    { background: none; color: #9ca3af; border: 1px solid #374151; font-size: .75rem; padding: 5px 11px; }
+.btn-ghost:hover { color: white; border-color: #6b7280; opacity: 1; }
+.btn-sm { padding: 4px 10px; font-size: .73rem; }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ══════════════════════════════════════
+   PROJECTS LIST SCREEN
+══════════════════════════════════════ */
+.projects-wrap { max-width: 780px; margin: 0 auto; padding: 28px 20px; }
+.projects-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.projects-top h2 { font-size: 1.1rem; font-weight: 700; }
+.projects-top p  { font-size: .78rem; color: var(--sub); margin-top: 2px; }
+
+.project-card {
+  background: white; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 18px 20px; margin-bottom: 12px; cursor: pointer;
+  transition: box-shadow .15s, border-color .15s;
+  display: flex; align-items: center; gap: 16px;
+}
+.project-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.09); border-color: #c7d0e0; }
+.project-card.active-proj { border-left: 4px solid var(--accent); }
+.project-card.done-proj   { border-left: 4px solid var(--green); opacity: .8; }
+
+.proj-icon { font-size: 1.6rem; flex-shrink: 0; }
+.proj-info { flex: 1; }
+.proj-name { font-size: .95rem; font-weight: 700; }
+.proj-meta { font-size: .75rem; color: var(--sub); margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap; }
+.proj-meta span { display: flex; align-items: center; gap: 3px; }
+
+.proj-progress { width: 160px; flex-shrink: 0; }
+.prog-label { font-size: .7rem; color: var(--sub); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.prog-bar-wrap { background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden; }
+.prog-bar { height: 100%; border-radius: 999px; background: var(--accent); transition: width .4s; }
+.prog-bar.done { background: var(--green); }
+.prog-bar.warn { background: var(--yellow); }
+
+.proj-status { display: flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 700; flex-shrink: 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-blue   { background: var(--accent); }
+.dot-green  { background: var(--green); }
+.dot-yellow { background: var(--yellow); }
+.dot-gray   { background: #9ca3af; }
+
+.proj-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+.empty-projects { text-align: center; padding: 60px 20px; color: var(--sub); }
+.empty-projects h3 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.empty-projects p  { font-size: .85rem; margin-bottom: 20px; }
+
+/* ══════════════════════════════════════
+   NEW PROJECT MODAL
+══════════════════════════════════════ */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.modal { background: white; border-radius: 14px; width: 560px; max-width: 94vw; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden; }
+.modal-head { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.modal-head h2 { font-size: 1rem; font-weight: 700; }
+.modal-close { background: none; border: none; font-size: 1.2rem; color: var(--sub); cursor: pointer; }
+.modal-body { padding: 20px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 18px; }
+.modal-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: .75rem; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .4px; }
+.field input, .field textarea, .field select {
+  border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  font-size: .87rem; color: var(--text); outline: none; font-family: inherit;
+}
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+
+.chips-field { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { padding: 4px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--sub); transition: all .12s; user-select: none; }
+.chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+.chip-clear { background: #fee2e2; border-color: #fca5a5; color: var(--red); }
+
+/* Items builder */
+.items-list { display: flex; flex-direction: column; gap: 6px; }
+.item-entry { display: flex; align-items: center; gap: 8px; background: #f9fafb; border: 1px solid var(--border); border-radius: 7px; padding: 8px 11px; }
+.item-entry span { flex: 1; font-size: .83rem; }
+.item-entry button { background: none; border: none; color: #ef4444; cursor: pointer; font-size: .85rem; }
+.add-item-row { display: flex; gap: 6px; }
+.add-item-row input { flex: 1; border: 1.5px dashed var(--border); border-radius: 7px; padding: 7px 11px; font-size: .83rem; outline: none; }
+.add-item-row input:focus { border-color: var(--accent); }
+.add-item-row button { background: var(--accent); color: white; border: none; border-radius: 7px; padding: 7px 14px; font-size: .8rem; cursor: pointer; font-weight: 600; }
+
+/* ══════════════════════════════════════
+   EVALUATION SCREEN
+══════════════════════════════════════ */
+.eval-header { background: #1a1d23; color: white; padding: 10px 22px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #374151; }
+.eval-header .back-btn { background: none; border: 1px solid #374151; color: #9ca3af; border-radius: 6px; padding: 5px 10px; font-size: .75rem; cursor: pointer; }
+.eval-header .back-btn:hover { color: white; border-color: #6b7280; }
+.eval-proj-name { font-size: .95rem; font-weight: 700; }
+.eval-proj-meta { font-size: .72rem; color: #9ca3af; }
+.eval-spacer { flex: 1; }
+.eval-progress { display: flex; align-items: center; gap: 10px; }
+.eval-prog-text { font-size: .75rem; color: #9ca3af; white-space: nowrap; }
+.eval-prog-bar { width: 120px; height: 6px; background: #374151; border-radius: 999px; overflow: hidden; }
+.eval-prog-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+
+.eval-toolbar { background: white; border-bottom: 1px solid var(--border); padding: 10px 22px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.eval-filter-label { font-size: .68rem; font-weight: 700; color: var(--sub); text-transform: uppercase; }
+.eval-toolbar select, .eval-toolbar input { border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; font-size: .8rem; outline: none; }
+.eval-spacer2 { flex: 1; }
+
+.eval-results { padding: 7px 22px; background: #f9fafb; border-bottom: 1px solid var(--border); font-size: .76rem; color: var(--sub); }
+.eval-results strong { color: var(--text); }
+
+.eval-grid { padding: 14px 22px; }
+.eval-floor-section { margin-bottom: 20px; }
+.eval-floor-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--sub); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+.eval-floor-label .fc { background: var(--border); padding: 2px 8px; border-radius: 999px; font-size: .66rem; }
+.eval-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Room eval card */
+.eval-card { width: 175px; border: 1.5px solid var(--border); border-radius: 9px; background: white; overflow: hidden; transition: box-shadow .12s; cursor: default; }
+.eval-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.eval-card.c-yes     { border-color: #86efac; background: var(--green-bg); }
+.eval-card.c-no      { border-color: #fca5a5; background: var(--red-bg); }
+.eval-card.c-partial { border-color: #fcd34d; background: var(--yellow-bg); }
+
+.eval-card-top { padding: 7px 9px 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+.eval-room-num { font-size: .93rem; font-weight: 800; }
+.eval-room-type { font-size: .6rem; font-weight: 700; color: var(--sub); background: #f3f4f6; padding: 1px 5px; border-radius: 4px; }
+.eval-status-pill { font-size: .58rem; font-weight: 700; padding: 2px 6px; border-radius: 999px; text-transform: uppercase; }
+.pill-yes     { background: #dcfce7; color: var(--green); }
+.pill-no      { background: #fee2e2; color: var(--red); }
+.pill-partial { background: #fef3c7; color: var(--yellow); }
+.pill-none    { background: #f3f4f6; color: var(--sub); }
+
+.eval-items { padding: 6px 9px; display: flex; flex-direction: column; gap: 4px; }
+.eval-item-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.eval-item-name { font-size: .72rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eval-toggles { display: flex; gap: 2px; flex-shrink: 0; }
+.etb { width: 22px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border); font-size: .58rem; font-weight: 700; cursor: pointer; background: white; display: flex; align-items: center; justify-content: center; transition: all .1s; }
+.etb.t-yes { background: var(--green); border-color: var(--green); color: white; }
+.etb.t-no  { background: var(--red);   border-color: var(--red);   color: white; }
+
+.eval-note { padding: 2px 9px 7px; }
+.eval-note textarea { width: 100%; border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; font-size: .68rem; height: 38px; resize: none; font-family: inherit; outline: none; background: rgba(255,255,255,.6); }
+.eval-note textarea::placeholder { color: #9ca3af; }
+
+/* ══════════════════════════════════════
+   PDF REPORT
+══════════════════════════════════════ */
+.report-page { max-width: 820px; margin: 0 auto; padding: 32px 24px; background: white; min-height: 100vh; }
+
+.rpt-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 2.5px solid #1a1d23; margin-bottom: 24px; }
+.rpt-title-block h1 { font-size: 22px; font-weight: 800; }
+.rpt-title-block .rpt-hotel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: #6b7280; margin-bottom: 4px; }
+.rpt-title-block .rpt-sub { font-size: 11px; color: #6b7280; margin-top: 4px; }
+.rpt-right { text-align: right; }
+.rpt-right .rl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin-bottom: 2px; }
+.rpt-right .rn { font-size: 12px; font-weight: 600; }
+.rpt-right .rs { font-size: 10px; color: #6b7280; }
+
+/* Overall progress */
+.rpt-overall { background: #f8f9fa; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 18px 20px; margin-bottom: 22px; }
+.rpt-overall-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.rpt-overall-top h2 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #6b7280; }
+.rpt-overall-nums { display: flex; gap: 20px; }
+.ron { text-align: center; }
+.ron-n { font-size: 26px; font-weight: 800; }
+.ron-l { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin-top: 1px; }
+.ron-ok  .ron-n { color: #16a34a; }
+.ron-no  .ron-n { color: #dc2626; }
+.ron-all .ron-n { color: #1a1d23; }
+.rpt-big-bar-wrap { background: #e5e7eb; border-radius: 999px; height: 14px; overflow: hidden; margin-bottom: 6px; }
+.rpt-big-bar { height: 100%; border-radius: 999px; background: #1a56db; }
+.rpt-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: #6b7280; }
+
+/* Missing alert */
+.rpt-missing-alert { background: #fff1f1; border: 1.5px solid #fca5a5; border-radius: 10px; padding: 14px 18px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 12px; }
+.rpt-missing-alert .icon { font-size: 1.3rem; flex-shrink: 0; }
+.rpt-missing-alert h3 { font-size: 13px; font-weight: 800; color: #dc2626; margin-bottom: 2px; }
+.rpt-missing-alert p  { font-size: 11px; color: #6b7280; }
+
+/* By room type table */
+.rpt-section { margin-bottom: 22px; }
+.rpt-section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #6b7280; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb; }
+
+.rpt-type-table { width: 100%; border-collapse: collapse; }
+.rpt-type-table th { padding: 6px 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; background: #f8f9fa; border-bottom: 1.5px solid #e5e7eb; text-align: left; }
+.rpt-type-table td { padding: 8px 10px; font-size: 11px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.rpt-type-table tr:last-child td { border-bottom: none; }
+.rpt-type-table tr:nth-child(even) td { background: #fafafa; }
+.rpt-inline-bar { display: flex; align-items: center; gap: 6px; }
+.rpt-inline-bar-wrap { flex: 1; max-width: 140px; background: #e5e7eb; border-radius: 999px; height: 7px; overflow: hidden; }
+.rpt-inline-fill { height: 100%; border-radius: 999px; }
+.fill-ok   { background: #16a34a; }
+.fill-warn { background: #d97706; }
+.fill-bad  { background: #dc2626; }
+.rpt-pct { font-size: 10px; font-weight: 700; width: 32px; }
+.miss-count { background: #fee2e2; color: #dc2626; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.ok-count   { background: #dcfce7; color: #16a34a; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+
+/* By floor table — same style */
+
+/* Missing rooms grid */
+.missing-rooms-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.missing-room-chip { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; font-family: monospace; }
+.missing-room-chip.has-note::after { content: ' 📝'; font-size: 8px; }
+
+/* Footer */
+.rpt-footer { margin-top: 24px; padding-top: 14px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; }
+.rpt-footer div { font-size: 9px; color: #9ca3af; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .report-page { padding: 16px; }
+  @page { margin: 1.5cm; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div>
+    <h1>🏗️ Project Tracker</h1>
+    <p>JW Marriott Houston Downtown</p>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-ghost" onclick="showScreen('projects')">📋 All Projects</button>
+  </div>
+</header>
+
+<!-- ══ SCREEN: PROJECTS LIST ══ -->
+<div class="screen active" id="screen-projects">
+  <div class="projects-wrap">
+    <div class="projects-top">
+      <div>
+        <h2>Your Projects</h2>
+        <p id="projects-count">Loading…</p>
+      </div>
+      <button class="btn btn-primary" onclick="openNewProject()">+ New Project</button>
+    </div>
+    <div id="projects-list"></div>
+  </div>
+</div>
+
+<!-- ══ SCREEN: EVALUATION ══ -->
+<div class="screen" id="screen-eval">
+  <div class="eval-header">
+    <button class="back-btn" onclick="showScreen('projects')">← Projects</button>
+    <div>
+      <div class="eval-proj-name" id="eval-proj-name">—</div>
+      <div class="eval-proj-meta" id="eval-proj-meta">—</div>
+    </div>
+    <div class="eval-spacer"></div>
+    <div class="eval-progress">
+      <span class="eval-prog-text" id="eval-prog-text">0 / 0</span>
+      <div class="eval-prog-bar"><div class="eval-prog-fill" id="eval-prog-fill" style="width:0%"></div></div>
+    </div>
+    <button class="btn btn-primary btn-sm no-print" onclick="generateReport()" style="margin-left:10px">📋 PDF Report</button>
+    <button class="btn btn-outline btn-sm no-print" onclick="saveAll()" style="margin-left:4px">💾 Save</button>
+  </div>
+
+  <div class="eval-toolbar no-print">
+    <span class="eval-filter-label">Status:</span>
+    <select id="ef-status" onchange="applyEvalFilters()">
+      <option value="">All</option>
+      <option value="none">Not Reviewed</option>
+      <option value="yes">Complete</option>
+      <option value="partial">Incomplete</option>
+      <option value="no">Missing All</option>
+    </select>
+    <span class="eval-filter-label" style="margin-left:6px">Floor:</span>
+    <select id="ef-floor" onchange="applyEvalFilters()">
+      <option value="">All</option>
+    </select>
+    <span class="eval-filter-label" style="margin-left:6px">Type:</span>
+    <select id="ef-type" onchange="applyEvalFilters()">
+      <option value="">All</option>
+    </select>
+    <input type="text" id="ef-search" placeholder="Search room…" oninput="applyEvalFilters()" style="margin-left:6px;width:110px">
+    <div class="eval-spacer2"></div>
+    <button class="btn btn-outline btn-sm" onclick="markAllVisible('yes')">✓ Mark all visible YES</button>
+    <button class="btn btn-outline btn-sm" onclick="markAllVisible('no')">✗ Mark all visible NO</button>
+  </div>
+
+  <div class="eval-results" id="eval-results">—</div>
+  <div class="eval-grid" id="eval-grid"></div>
+</div>
+
+<!-- ══ SCREEN: REPORT ══ -->
+<div class="screen" id="screen-report">
+  <div class="no-print" style="background:#1a1d23;padding:10px 22px;display:flex;align-items:center;gap:10px">
+    <button class="back-btn" onclick="showScreen('eval')">← Back to Evaluation</button>
+    <span style="color:#9ca3af;font-size:.75rem" id="report-proj-label">—</span>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+  <div class="report-page" id="report-content"></div>
+</div>
+
+<!-- ══ NEW PROJECT MODAL ══ -->
+<div class="modal-overlay" id="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-head">
+    <h2 id="modal-title">New Project</h2>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body">
+
+    <div style="display:flex;gap:12px">
+      <div class="field" style="flex:1">
+        <label>Project Name *</label>
+        <input type="text" id="proj-name" placeholder="e.g. New TVs, Carpet Replacement…">
+      </div>
+      <div class="field" style="width:50px">
+        <label>Icon</label>
+        <input type="text" id="proj-icon" placeholder="📺" maxlength="2" style="text-align:center;font-size:1.2rem">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Description (optional)</label>
+      <input type="text" id="proj-desc" placeholder="Brief description for your team…">
+    </div>
+
+    <div class="field">
+      <label>Items to Evaluate * <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9ca3af">(what are you checking in each room?)</span></label>
+      <div class="items-list" id="modal-items-list"></div>
+      <div class="add-item-row" style="margin-top:6px">
+        <input type="text" id="new-item-input" placeholder="e.g. New TV, Carpet replaced, Sofa updated…" onkeydown="if(event.key==='Enter')addModalItem()">
+        <button onclick="addModalItem()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Rooms to Evaluate</label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;text-transform:none;letter-spacing:0;font-size:.84rem;cursor:pointer">
+          <input type="radio" name="scope" value="all" id="scope-all" checked onchange="updateScopeUI()"> All 384 rooms
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;text-transform:none;letter-spacing:0;font-size:.84rem;cursor:pointer">
+          <input type="radio" name="scope" value="custom" id="scope-custom" onchange="updateScopeUI()"> Custom selection
+        </label>
+      </div>
+    </div>
+
+    <div id="scope-filters" style="display:none;flex-direction:column;gap:12px">
+      <div class="field">
+        <label>Room Type</label>
+        <div class="chips-field" id="scope-type-chips"></div>
+      </div>
+      <div class="field">
+        <label>Floor</label>
+        <div class="chips-field" id="scope-floor-chips"></div>
+      </div>
+      <div class="field">
+        <label>Room Suffix (Stack)</label>
+        <div class="chips-field" id="scope-stack-chips"></div>
+      </div>
+      <div style="font-size:.75rem;color:var(--sub);background:#f9fafb;border:1px solid var(--border);border-radius:7px;padding:8px 12px" id="scope-count">
+        Select filters above to define which rooms to include.
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveProject()" id="save-proj-btn">Create Project</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast" style="position:fixed;bottom:22px;right:22px;background:#1a1d23;color:white;padding:10px 18px;border-radius:8px;font-size:.82rem;z-index:9999;opacity:0;transition:opacity .3s;box-shadow:0 4px 20px rgba(0,0,0,.3)"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ROOM DATABASE
+// ═══════════════════════════════════════════════════════
+const ROOM_DB = {"0204":"SRPK","0205":"KSTE","0206":"DLQQ","0207":"DLAK","0208":"DLQQ","0210":"DLQQ","0211":"SRPK","0212":"SRPK","0213":"POET","0214":"SRPK","0215":"EXEC","0302":"DLKG","0303":"SUIT","0304":"SRPK","0305":"KSTE","0306":"DLQQ","0307":"DLAK","0308":"DLQQ","0309":"POET","0310":"DLQQ","0311":"SRPK","0312":"SRPK","0313":"POET","0314":"SRPK","0315":"EXEC","0316":"DBAQ","0317":"DLKG","0321":"LUXR","0322":"OZZZ","0323":"OZZA","0324":"LUXR","0325":"QNQN","0326":"KGKG","0327":"KGKG","0401":"DLKG","0402":"DLQQ","0403":"SUIT","0404":"SRPK","0405":"KSTE","0406":"DLQQ","0407":"DLAK","0408":"DLQQ","0409":"POET","0410":"DLQQ","0411":"SRPK","0412":"SRPK","0413":"POET","0414":"SRPK","0415":"EXEC","0416":"KSTA","0417":"DLQQ","0418":"SRPK","0419":"DLQQ","0421":"PENA","0422":"OZZY","0423":"OZZY","0424":"LUXS","0425":"QNQN","0426":"KGKG","0427":"QNQA","0501":"DLKG","0502":"DLQQ","0503":"SUIT","0504":"SRPK","0505":"KSTE","0506":"DLQQ","0507":"DLAK","0508":"DLQQ","0509":"POET","0510":"DLQQ","0511":"SRPK","0512":"SRPK","0513":"POET","0514":"SRPK","0515":"EXEC","0516":"KSTA","0517":"DLQQ","0518":"SRPK","0519":"DLQQ","0521":"PENT","0522":"OZZY","0523":"OZZY","0524":"LUXS","0525":"QNQN","0526":"KGKG","0527":"KGKG","0601":"DLKG","0602":"DLQQ","0603":"SUIT","0604":"SRPK","0605":"KSTE","0606":"DLQQ","0607":"DLKG","0608":"DLQQ","0609":"POET","0610":"DLQQ","0611":"SRPK","0612":"SRPK","0613":"POET","0614":"SRPK","0615":"EXEC","0616":"KSTA","0617":"DLQQ","0618":"SRPK","0619":"DLQQ","0621":"PENT","0622":"OZZY","0623":"OZZY","0624":"LUXS","0625":"QNQN","0626":"KGKG","0627":"QNQN","0701":"DLKG","0702":"DLQQ","0703":"DSTE","0704":"SRPK","0705":"KSTE","0706":"DLQQ","0707":"DLKG","0708":"DLQQ","0709":"POET","0710":"DLQQ","0711":"SRPK","0712":"SRPK","0713":"POET","0714":"SRPK","0715":"EXEC","0716":"KSTA","0717":"DLQQ","0718":"SRPK","0719":"DLQQ","0721":"PENT","0722":"OZZY","0723":"OZZY","0724":"LUXS","0725":"DTWN","0726":"VIEW","0727":"VIEW","0801":"DLKG","0802":"DLQQ","0803":"DSTE","0804":"SRPK","0805":"KSTE","0806":"DLQQ","0807":"DLKG","0808":"DLQQ","0809":"POET","0810":"DLQQ","0811":"SRPK","0812":"SRPK","0813":"POET","0814":"SRPK","0815":"EXEC","0816":"KSTA","0817":"DLQQ","0818":"SRPK","0819":"DLQQ","0821":"PENT","0822":"OZZY","0823":"OZZY","0824":"LUXS","0825":"DTWN","0826":"VIEW","0827":"DTWN","0901":"DLKG","0902":"DLQQ","0903":"DSTE","0904":"SRPK","0905":"KSTE","0906":"DLQQ","0907":"DLKG","0908":"DLQQ","0909":"POET","0910":"DLQQ","0911":"SRPK","0912":"SRPK","0913":"POET","0914":"SRPK","0915":"EXEC","0916":"KSTA","0917":"DLQQ","0918":"SRPK","0919":"DLQQ","0921":"PENT","0922":"OZZY","0923":"OZZY","0924":"LUXS","0925":"DTWN","0926":"VIEW","0927":"VIEW","1001":"DLKG","1002":"DLQQ","1003":"DSTE","1004":"SRPK","1005":"KSTE","1006":"DLQQ","1007":"DLKG","1008":"DLQQ","1009":"POET","1010":"DLQQ","1011":"SRPK","1012":"SRPK","1013":"POET","1014":"SRPK","1015":"EXEC","1016":"KSTA","1017":"DLQQ","1018":"SRPK","1019":"DLQQ","1021":"LUXS","1022":"OZZY","1023":"OZZY","1024":"LUXS","1025":"DTWN","1026":"VIEA","1027":"DTWN","1101":"DLKG","1102":"DLQQ","1103":"DSTE","1104":"CNKG","1105":"KSTE","1106":"DLQQ","1107":"DLKG","1108":"DLQQ","1109":"POET","1110":"DLQQ","1111":"CNKG","1112":"CNKG","1114":"CNKG","1115":"SRPK","1116":"SRPK","1117":"SRPK","1118":"SRPK","1201":"DLKG","1202":"DLQQ","1203":"DSTE","1204":"CNKG","1205":"KSTE","1206":"DLQQ","1207":"DLKG","1208":"DLQQ","1209":"POET","1210":"DLQQ","1211":"CNKG","1212":"CNKG","1213":"POET","1214":"CNKG","1301":"DLKG","1302":"DLKG","1303":"DSTE","1304":"CNKG","1305":"KSTE","1306":"DLQQ","1307":"DLKG","1308":"DLQQ","1309":"POET","1310":"DLQQ","1311":"CNKG","1312":"CNKG","1313":"POET","1314":"CNKG","1401":"DLKG","1402":"DLQQ","1403":"DSTE","1404":"CNKG","1405":"KSTE","1406":"DLQQ","1407":"DLKG","1408":"DLQQ","1409":"POET","1410":"DLQQ","1411":"CNKG","1412":"CNKG","1413":"POET","1414":"CNKG","1501":"DLKG","1502":"DLQQ","1503":"DSTE","1504":"CNKG","1505":"KSTE","1506":"DLQQ","1507":"DLKG","1508":"DLQQ","1509":"POET","1510":"DLQQ","1511":"CNKG","1512":"CNKG","1513":"POET","1514":"CNKG","1601":"DLKG","1602":"DLQQ","1603":"DSTE","1604":"CNKG","1605":"KSTE","1606":"DLQQ","1607":"DLKG","1608":"DLQQ","1609":"POET","1610":"DLQQ","1611":"CNKG","1612":"CNKG","1613":"POET","1614":"CNKG","1701":"DLKG","1702":"DLQQ","1703":"DSTE","1704":"CNKG","1705":"KSTE","1706":"DLQQ","1707":"DLKG","1708":"DLQQ","1709":"POET","1710":"DLQQ","1711":"CNKG","1712":"CNKG","1713":"POET","1714":"CNKG","1801":"DLKG","1802":"DLQQ","1803":"DSTE","1804":"CNKG","1805":"KSTE","1806":"DLQQ","1807":"DLKG","1808":"DLQQ","1809":"POET","1810":"DLQQ","1811":"CNKG","1812":"CNKG","1813":"POET","1814":"CNKG","1901":"DLKG","1902":"DLQQ","1903":"DSTE","1904":"CNKG","1905":"KSTE","1906":"DLQQ","1907":"DLKG","1908":"DLQQ","1909":"POET","1910":"DLQQ","1911":"CNKG","1912":"CNKG","1913":"POET","1914":"CNKG","2001":"DLKG","2002":"DLQQ","2003":"DSTE","2005":"PRES","2006":"DLKG","2007":"DLKG","2008":"DLQQ","2009":"POET","2010":"DLQQ","2011":"CNKG","2012":"CNKG","2013":"POET","2014":"CNKG","2101":"DLKG","2102":"DLQQ","2103":"DSTE","2105":"PRES","2107":"DLKG","2108":"DLQQ","2109":"POET","2110":"DLQQ","2111":"CNKG","2112":"CNKG","2113":"POET","2114":"CNKG","2201":"DLKG","2202":"DLQQ","2203":"DSTE","2204":"CNKG","2205":"KSTE","2206":"DLQQ","2207":"DLKG","2208":"DLQQ","2209":"POET","2210":"DLQQ","2211":"CNKG","2212":"CNKG","2213":"POET","2214":"CNKG"};
+const ALL_ROOMS = Object.keys(ROOM_DB).sort();
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let projects = [];       // array of project objects
+let currentProjId = null;
+let editingProjId = null;
+let modalItems = [];
+let scopeTypes = new Set();
+let scopeFloors = new Set();
+let scopeStack = new Set();
+let evalVisibleRooms = [];
+
+function loadState() {
+  const s = localStorage.getItem('pt_projects_v1');
+  if (s) { try { projects = JSON.parse(s); } catch(e) { projects = []; } }
+}
+function saveState() {
+  localStorage.setItem('pt_projects_v1', JSON.stringify(projects));
+}
+function getProject(id) { return projects.find(p => p.id === id); }
+
+// ═══════════════════════════════════════════════════════
+// SCREENS
+// ═══════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  if (name === 'projects') renderProjectsList();
+}
+
+// ═══════════════════════════════════════════════════════
+// PROJECTS LIST
+// ═══════════════════════════════════════════════════════
+function renderProjectsList() {
+  const list = document.getElementById('projects-list');
+  const count = document.getElementById('projects-count');
+  count.textContent = `${projects.length} project${projects.length !== 1 ? 's' : ''} · ${projects.filter(p=>p.status==='active').length} active`;
+
+  if (!projects.length) {
+    list.innerHTML = `<div class="empty-projects">
+      <h3>No projects yet</h3>
+      <p>Create your first project to start tracking room evaluations.</p>
+      <button class="btn btn-primary" onclick="openNewProject()">+ Create First Project</button>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = projects.map(p => {
+    const rooms = p.rooms || [];
+    const reviewed = rooms.filter(r => getRoomStatus(p, r) !== 'none').length;
+    const complete = rooms.filter(r => getRoomStatus(p, r) === 'yes').length;
+    const missing  = rooms.filter(r => getRoomStatus(p, r) === 'no' || getRoomStatus(p, r) === 'partial').length;
+    const pct = rooms.length ? Math.round(reviewed / rooms.length * 100) : 0;
+    const allDone = reviewed === rooms.length && rooms.length > 0;
+    const barClass = allDone ? 'done' : pct > 60 ? '' : 'warn';
+    const dotClass = allDone ? 'dot-green' : p.status === 'active' ? 'dot-blue' : 'dot-gray';
+    const statusLabel = allDone ? 'Done' : p.status === 'active' ? 'Active' : 'Archived';
+    const cardClass = allDone ? 'done-proj' : p.status === 'active' ? 'active-proj' : '';
+
+    return `<div class="project-card ${cardClass}" onclick="openEval('${p.id}')">
+      <div class="proj-icon">${p.icon || '📋'}</div>
+      <div class="proj-info">
+        <div class="proj-name">${p.name}</div>
+        <div class="proj-meta">
+          <span>📅 ${p.created}</span>
+          <span>🏠 ${rooms.length} rooms</span>
+          <span>📋 ${p.items.join(', ')}</span>
+          ${p.desc ? `<span style="color:#9ca3af">${p.desc}</span>` : ''}
+        </div>
+      </div>
+      <div class="proj-progress">
+        <div class="prog-label"><span>${reviewed}/${rooms.length} reviewed</span><span>${pct}%</span></div>
+        <div class="prog-bar-wrap"><div class="prog-bar ${barClass}" style="width:${pct}%"></div></div>
+        ${missing > 0 ? `<div style="font-size:.68rem;color:#dc2626;margin-top:3px;font-weight:600">⚠️ ${missing} missing</div>` : allDone ? `<div style="font-size:.68rem;color:#16a34a;margin-top:3px;font-weight:600">✓ All complete</div>` : ''}
+      </div>
+      <div class="proj-status"><div class="dot ${dotClass}"></div>${statusLabel}</div>
+      <div class="proj-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-outline btn-sm" onclick="editProject('${p.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW / EDIT PROJECT MODAL
+// ═══════════════════════════════════════════════════════
+function openNewProject() {
+  editingProjId = null;
+  modalItems = [];
+  scopeTypes.clear(); scopeFloors.clear(); scopeStack.clear();
+  document.getElementById('modal-title').textContent = 'New Project';
+  document.getElementById('save-proj-btn').textContent = 'Create Project';
+  document.getElementById('proj-name').value = '';
+  document.getElementById('proj-icon').value = '';
+  document.getElementById('proj-desc').value = '';
+  document.getElementById('new-item-input').value = '';
+  document.querySelector('input[name=scope][value=all]').checked = true;
+  updateScopeUI();
+  buildScopeChips();
+  renderModalItems();
+  document.getElementById('modal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('proj-name').focus(), 100);
+}
+
+function editProject(id) {
+  const p = getProject(id);
+  if (!p) return;
+  editingProjId = id;
+  modalItems = [...p.items];
+  scopeTypes = new Set(p.scopeTypes || []);
+  scopeFloors = new Set(p.scopeFloors || []);
+  scopeStack  = new Set(p.scopeStack  || []);
+  document.getElementById('modal-title').textContent = 'Edit Project';
+  document.getElementById('save-proj-btn').textContent = 'Save Changes';
+  document.getElementById('proj-name').value = p.name;
+  document.getElementById('proj-icon').value = p.icon || '';
+  document.getElementById('proj-desc').value = p.desc || '';
+  const isCustom = p.scopeTypes?.length || p.scopeFloors?.length || p.scopeStack?.length;
+  document.querySelector(`input[name=scope][value=${isCustom ? 'custom' : 'all'}]`).checked = true;
+  updateScopeUI();
+  buildScopeChips();
+  renderModalItems();
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function renderModalItems() {
+  const list = document.getElementById('modal-items-list');
+  if (!modalItems.length) {
+    list.innerHTML = `<div style="font-size:.78rem;color:#9ca3af;font-style:italic;padding:4px 0">Add items to evaluate below…</div>`;
+    return;
+  }
+  list.innerHTML = modalItems.map((item, i) => `
+    <div class="item-entry">
+      <span>${item}</span>
+      <button onclick="removeModalItem(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addModalItem() {
+  const inp = document.getElementById('new-item-input');
+  const val = inp.value.trim();
+  if (!val || modalItems.includes(val)) return;
+  modalItems.push(val);
+  inp.value = '';
+  renderModalItems();
+  inp.focus();
+}
+
+function removeModalItem(i) {
+  modalItems.splice(i, 1);
+  renderModalItems();
+}
+
+function updateScopeUI() {
+  const isCustom = document.getElementById('scope-custom').checked;
+  document.getElementById('scope-filters').style.display = isCustom ? 'flex' : 'none';
+  if (isCustom) updateScopeCount();
+}
+
+function buildScopeChips() {
+  // Types
+  const types = [...new Set(Object.values(ROOM_DB))].sort();
+  document.getElementById('scope-type-chips').innerHTML =
+    types.map(t => `<div class="chip ${scopeTypes.has(t)?'active':''}" onclick="toggleScopeChip('types','${t}',this)">${t}</div>`).join('') +
+    `<div class="chip chip-clear" onclick="clearScopeChips('types')">✕ All</div>`;
+
+  // Floors
+  const floors = [...new Set(ALL_ROOMS.map(r=>r.slice(0,2)))].sort();
+  document.getElementById('scope-floor-chips').innerHTML =
+    floors.map(f => `<div class="chip ${scopeFloors.has(f)?'active':''}" onclick="toggleScopeChip('floors','${f}',this)">Floor ${f}</div>`).join('') +
+    `<div class="chip chip-clear" onclick="clearScopeChips('floors')">✕ All</div>`;
+
+  // Stack
+  const stacks = [];
+  for (let i=1; i<=27; i++) { if(i!==20) stacks.push(String(i).padStart(2,'0')); }
+  document.getElementById('scope-stack-chips').innerHTML =
+    stacks.map(s => `<div class="chip ${scopeStack.has(s)?'active':''}" onclick="toggleScopeChip('stack','${s}',this)">${s}</div>`).join('') +
+    `<div class="chip chip-clear" onclick="clearScopeChips('stack')">✕ All</div>`;
+}
+
+function toggleScopeChip(key, val, el) {
+  const set = key==='types' ? scopeTypes : key==='floors' ? scopeFloors : scopeStack;
+  if (set.has(val)) { set.delete(val); el.classList.remove('active'); }
+  else { set.add(val); el.classList.add('active'); }
+  updateScopeCount();
+}
+
+function clearScopeChips(key) {
+  const set = key==='types' ? scopeTypes : key==='floors' ? scopeFloors : scopeStack;
+  set.clear();
+  const id = key==='types'?'scope-type-chips':key==='floors'?'scope-floor-chips':'scope-stack-chips';
+  document.querySelectorAll(`#${id} .chip`).forEach(c=>c.classList.remove('active'));
+  updateScopeCount();
+}
+
+function computeScopeRooms() {
+  if (document.getElementById('scope-all').checked) return [...ALL_ROOMS];
+  return ALL_ROOMS.filter(r => {
+    if (scopeTypes.size  && !scopeTypes.has(ROOM_DB[r]))    return false;
+    if (scopeFloors.size && !scopeFloors.has(r.slice(0,2))) return false;
+    if (scopeStack.size  && !scopeStack.has(r.slice(2)))    return false;
+    return true;
+  });
+}
+
+function updateScopeCount() {
+  const rooms = computeScopeRooms();
+  document.getElementById('scope-count').textContent =
+    `${rooms.length} rooms selected with current filters.`;
+}
+
+function saveProject() {
+  const name = document.getElementById('proj-name').value.trim();
+  if (!name) { showToast('⚠️ Project name is required'); return; }
+  if (!modalItems.length) { showToast('⚠️ Add at least one item to evaluate'); return; }
+
+  const rooms = computeScopeRooms();
+  if (!rooms.length) { showToast('⚠️ No rooms match your filters'); return; }
+
+  const now = new Date().toLocaleDateString('en-US', {month:'short', year:'numeric'});
+
+  if (editingProjId) {
+    const p = getProject(editingProjId);
+    p.name  = name;
+    p.icon  = document.getElementById('proj-icon').value || '📋';
+    p.desc  = document.getElementById('proj-desc').value.trim();
+    p.items = [...modalItems];
+    p.scopeTypes  = [...scopeTypes];
+    p.scopeFloors = [...scopeFloors];
+    p.scopeStack  = [...scopeStack];
+    // add new rooms if scope changed, keep existing evaluations
+    rooms.forEach(r => { if (!p.rooms.includes(r)) p.rooms.push(r); });
+    p.rooms = p.rooms.filter(r => rooms.includes(r));
+    showToast('✓ Project updated');
+  } else {
+    const p = {
+      id: Date.now().toString(),
+      name, icon: document.getElementById('proj-icon').value || '📋',
+      desc: document.getElementById('proj-desc').value.trim(),
+      items: [...modalItems],
+      rooms, data: {},
+      scopeTypes: [...scopeTypes], scopeFloors: [...scopeFloors], scopeStack: [...scopeStack],
+      status: 'active', created: now
+    };
+    projects.unshift(p);
+    showToast('✓ Project created — ' + rooms.length + ' rooms ready');
+  }
+
+  saveState();
+  closeModal();
+  renderProjectsList();
+}
+
+function deleteProject(id) {
+  const p = getProject(id);
+  if (!confirm(`Delete project "${p.name}"? This cannot be undone.`)) return;
+  projects = projects.filter(x => x.id !== id);
+  saveState();
+  renderProjectsList();
+}
+
+// ═══════════════════════════════════════════════════════
+// EVALUATION SCREEN
+// ═══════════════════════════════════════════════════════
+function openEval(id) {
+  currentProjId = id;
+  const p = getProject(id);
+  document.getElementById('eval-proj-name').textContent = `${p.icon||'📋'} ${p.name}`;
+  document.getElementById('eval-proj-meta').textContent = `${p.rooms.length} rooms · ${p.items.join(' · ')}`;
+
+  // Build floor/type dropdowns
+  const floors = [...new Set(p.rooms.map(r=>r.slice(0,2)))].sort();
+  const types  = [...new Set(p.rooms.map(r=>ROOM_DB[r]))].sort();
+  const fSel = document.getElementById('ef-floor');
+  const tSel = document.getElementById('ef-type');
+  fSel.innerHTML = '<option value="">All Floors</option>' + floors.map(f=>`<option value="${f}">Floor ${f}</option>`).join('');
+  tSel.innerHTML = '<option value="">All Types</option>'  + types.map(t=>`<option value="${t}">${t}</option>`).join('');
+
+  document.getElementById('ef-status').value = '';
+  document.getElementById('ef-search').value = '';
+
+  showScreen('eval');
+  applyEvalFilters();
+}
+
+function getRoomStatus(p, r) {
+  const d = (p.data[r] || {});
+  const vals = p.items.map(it => d[it]);
+  if (vals.every(v => v === undefined || v === null)) return 'none';
+  if (vals.every(v => v === 'yes')) return 'yes';
+  if (vals.every(v => v === 'no'))  return 'no';
+  return 'partial';
+}
+
+function applyEvalFilters() {
+  const p = getProject(currentProjId);
+  const statusF = document.getElementById('ef-status').value;
+  const floorF  = document.getElementById('ef-floor').value;
+  const typeF   = document.getElementById('ef-type').value;
+  const searchF = document.getElementById('ef-search').value.trim();
+
+  evalVisibleRooms = p.rooms.filter(r => {
+    if (floorF  && !r.startsWith(floorF))       return false;
+    if (typeF   && ROOM_DB[r] !== typeF)         return false;
+    if (searchF && !r.includes(searchF))         return false;
+    if (statusF) {
+      const s = getRoomStatus(p, r);
+      if (statusF === 'none'    && s !== 'none')    return false;
+      if (statusF === 'yes'     && s !== 'yes')     return false;
+      if (statusF === 'partial' && s !== 'partial') return false;
+      if (statusF === 'no'      && s !== 'no')      return false;
+    }
+    return true;
+  });
+
+  renderEvalGrid();
+  updateEvalProgress();
+}
+
+function updateEvalProgress() {
+  const p = getProject(currentProjId);
+  const total    = p.rooms.length;
+  const reviewed = p.rooms.filter(r => getRoomStatus(p,r) !== 'none').length;
+  const pct = total ? Math.round(reviewed/total*100) : 0;
+  document.getElementById('eval-prog-text').textContent = `${reviewed}/${total} reviewed`;
+  document.getElementById('eval-prog-fill').style.width = pct + '%';
+
+  const missing = p.rooms.filter(r => ['no','partial'].includes(getRoomStatus(p,r))).length;
+  document.getElementById('eval-results').innerHTML =
+    `<strong>${evalVisibleRooms.length}</strong> rooms shown &nbsp;|&nbsp; ` +
+    `✓ Complete: <strong>${p.rooms.filter(r=>getRoomStatus(p,r)==='yes').length}</strong> &nbsp;` +
+    `⚠️ Missing: <strong style="color:#dc2626">${missing}</strong> &nbsp;` +
+    `— Not Reviewed: <strong>${p.rooms.filter(r=>getRoomStatus(p,r)==='none').length}</strong>`;
+}
+
+function renderEvalGrid() {
+  const p = getProject(currentProjId);
+  const wrap = document.getElementById('eval-grid');
+  if (!evalVisibleRooms.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:50px;color:var(--sub)"><h3>No rooms match</h3><p>Adjust filters above</p></div>`;
+    return;
+  }
+  const floors = [...new Set(evalVisibleRooms.map(r=>r.slice(0,2)))].sort();
+  wrap.innerHTML = floors.map(f => {
+    const fr = evalVisibleRooms.filter(r=>r.startsWith(f));
+    return `<div class="eval-floor-section">
+      <div class="eval-floor-label">Floor ${f} <span class="fc">${fr.length} rooms</span></div>
+      <div class="eval-cards">${fr.map(r => evalCardHTML(p, r)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function evalCardHTML(p, r) {
+  const d = p.data[r] || {};
+  const st = getRoomStatus(p, r);
+  const stClass = {yes:'c-yes', no:'c-no', partial:'c-partial', none:''}[st];
+  const pillClass = {yes:'pill-yes', no:'pill-no', partial:'pill-partial', none:'pill-none'}[st];
+  const pillText  = {yes:'Complete', no:'Missing', partial:'Partial', none:'Not reviewed'}[st];
+
+  const itemRows = p.items.map(item => {
+    const v = d[item];
+    return `<div class="eval-item-row">
+      <span class="eval-item-name" title="${item}">${item}</span>
+      <div class="eval-toggles">
+        <button class="etb ${v==='yes'?'t-yes':''}" onclick="toggleEvalItem('${r}','${item}','yes')">✓</button>
+        <button class="etb ${v==='no'?'t-no':''}"  onclick="toggleEvalItem('${r}','${item}','no')">✗</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="eval-card ${stClass}" id="ecard-${r}">
+    <div class="eval-card-top">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span class="eval-room-num">${r}</span>
+        <span class="eval-room-type">${ROOM_DB[r]}</span>
+      </div>
+      <span class="eval-status-pill ${pillClass}">${pillText}</span>
+    </div>
+    <div class="eval-items">${itemRows}</div>
+    <div class="eval-note">
+      <textarea placeholder="Notes…" onchange="updateEvalNote('${r}',this.value)">${d._note||''}</textarea>
+    </div>
+  </div>`;
+}
+
+function toggleEvalItem(r, item, val) {
+  const p = getProject(currentProjId);
+  if (!p.data[r]) p.data[r] = {};
+  p.data[r][item] = p.data[r][item] === val ? null : val;
+  saveState();
+  // refresh card
+  const el = document.getElementById(`ecard-${r}`);
+  if (el) { const tmp = document.createElement('div'); tmp.innerHTML = evalCardHTML(p, r); el.replaceWith(tmp.firstElementChild); }
+  updateEvalProgress();
+}
+
+function updateEvalNote(r, val) {
+  const p = getProject(currentProjId);
+  if (!p.data[r]) p.data[r] = {};
+  p.data[r]._note = val;
+  clearTimeout(window._nt); window._nt = setTimeout(saveState, 800);
+}
+
+function markAllVisible(val) {
+  const p = getProject(currentProjId);
+  evalVisibleRooms.forEach(r => {
+    if (!p.data[r]) p.data[r] = {};
+    p.items.forEach(item => { p.data[r][item] = val; });
+  });
+  saveState();
+  renderEvalGrid();
+  updateEvalProgress();
+  showToast(`✓ Marked ${evalVisibleRooms.length} rooms as ${val === 'yes' ? 'Complete' : 'Missing'}`);
+}
+
+function saveAll() { saveState(); showToast('💾 Saved'); }
+
+// ═══════════════════════════════════════════════════════
+// PDF REPORT
+// ═══════════════════════════════════════════════════════
+function generateReport() {
+  const p = getProject(currentProjId);
+  const now = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+
+  const rooms    = p.rooms;
+  const reviewed = rooms.filter(r => getRoomStatus(p,r) !== 'none');
+  const complete = rooms.filter(r => getRoomStatus(p,r) === 'yes');
+  const missing  = rooms.filter(r => ['no','partial'].includes(getRoomStatus(p,r)));
+  const notReviewed = rooms.filter(r => getRoomStatus(p,r) === 'none');
+
+  const totalRooms = rooms.length;
+  const pct = totalRooms ? Math.round(complete.length / totalRooms * 100) : 0;
+  const barW = pct;
+
+  // By Room Type breakdown
+  const types = [...new Set(rooms.map(r => ROOM_DB[r]))].sort();
+  const typeRows = types.map(t => {
+    const tRooms   = rooms.filter(r => ROOM_DB[r] === t);
+    const tMissing = tRooms.filter(r => ['no','partial'].includes(getRoomStatus(p,r)));
+    const tComplete = tRooms.filter(r => getRoomStatus(p,r) === 'yes');
+    const tPct = tRooms.length ? Math.round(tComplete.length / tRooms.length * 100) : 0;
+    const fillClass = tPct === 100 ? 'fill-ok' : tPct >= 70 ? 'fill-warn' : 'fill-bad';
+    const missStr = tMissing.length > 0
+      ? `<span class="miss-count">${tMissing.length} missing</span>`
+      : `<span class="ok-count">✓ All OK</span>`;
+    return `<tr>
+      <td style="font-weight:700">${t}</td>
+      <td style="color:#6b7280">${tRooms.length} rooms</td>
+      <td>
+        <div class="rpt-inline-bar">
+          <div class="rpt-inline-bar-wrap"><div class="rpt-inline-fill ${fillClass}" style="width:${tPct}%"></div></div>
+          <span class="rpt-pct" style="color:${tPct===100?'#16a34a':tPct>=70?'#d97706':'#dc2626'}">${tPct}%</span>
+        </div>
+      </td>
+      <td>${missStr}</td>
+    </tr>`;
+  }).join('');
+
+  // By Floor breakdown
+  const floors = [...new Set(rooms.map(r => r.slice(0,2)))].sort();
+  const floorRows = floors.map(f => {
+    const fRooms    = rooms.filter(r => r.startsWith(f));
+    const fMissing  = fRooms.filter(r => ['no','partial'].includes(getRoomStatus(p,r)));
+    const fComplete = fRooms.filter(r => getRoomStatus(p,r) === 'yes');
+    const fPct = fRooms.length ? Math.round(fComplete.length / fRooms.length * 100) : 0;
+    const fillClass = fPct === 100 ? 'fill-ok' : fPct >= 70 ? 'fill-warn' : 'fill-bad';
+    const missStr = fMissing.length > 0
+      ? `<span class="miss-count">${fMissing.length} missing</span>`
+      : `<span class="ok-count">✓ All OK</span>`;
+    return `<tr>
+      <td style="font-weight:700">Floor ${f}</td>
+      <td style="color:#6b7280">${fRooms.length} rooms</td>
+      <td>
+        <div class="rpt-inline-bar">
+          <div class="rpt-inline-bar-wrap"><div class="rpt-inline-fill ${fillClass}" style="width:${fPct}%"></div></div>
+          <span class="rpt-pct" style="color:${fPct===100?'#16a34a':fPct>=70?'#d97706':'#dc2626'}">${fPct}%</span>
+        </div>
+      </td>
+      <td>${missStr}</td>
+    </tr>`;
+  }).join('');
+
+  // Missing rooms grid — grouped by type for easy reading
+  const missingByType = types.map(t => {
+    const tm = missing.filter(r => ROOM_DB[r] === t);
+    if (!tm.length) return '';
+    return `<div style="margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${t} (${tm.length})</div>
+      <div class="missing-rooms-grid">
+        ${tm.map(r => {
+          const note = (p.data[r]||{})._note;
+          return `<div class="missing-room-chip ${note?'has-note':''}" title="${note||''}">${r}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Not reviewed list (compact)
+  const notRevHTML = notReviewed.length
+    ? `<div class="missing-rooms-grid">${notReviewed.map(r=>`<div class="missing-room-chip" style="background:#f3f4f6;border-color:#e5e7eb;color:#6b7280">${r}</div>`).join('')}</div>`
+    : `<p style="font-size:11px;color:#16a34a;font-style:italic">All rooms have been reviewed ✓</p>`;
+
+  const reportHTML = `
+    <div class="rpt-header">
+      <div class="rpt-title-block">
+        <div class="rpt-hotel">JW Marriott Houston Downtown · Housekeeping</div>
+        <h1>${p.icon||'📋'} ${p.name}</h1>
+        <div class="rpt-sub">Items evaluated: ${p.items.join(' · ')} &nbsp;·&nbsp; Generated: ${now}</div>
+      </div>
+      <div class="rpt-right">
+        <div class="rl">Prepared by</div>
+        <div class="rn">Housekeeping Management</div>
+        <div class="rs">JW Marriott Houston Downtown</div>
+      </div>
+    </div>
+
+    <!-- OVERALL PROGRESS -->
+    <div class="rpt-overall">
+      <div class="rpt-overall-top">
+        <h2>Overall Progress</h2>
+        <div class="rpt-overall-nums">
+          <div class="ron ron-all"><div class="ron-n">${totalRooms}</div><div class="ron-l">Total</div></div>
+          <div class="ron ron-ok"> <div class="ron-n">${complete.length}</div><div class="ron-l">Complete</div></div>
+          <div class="ron ron-no"> <div class="ron-n">${missing.length}</div><div class="ron-l">Missing</div></div>
+        </div>
+      </div>
+      <div class="rpt-big-bar-wrap">
+        <div class="rpt-big-bar" style="width:${barW}%;background:${pct===100?'#16a34a':pct>=70?'#1a56db':'#d97706'}"></div>
+      </div>
+      <div class="rpt-bar-labels">
+        <span>${complete.length} of ${totalRooms} rooms complete</span>
+        <span style="font-weight:700;color:${pct===100?'#16a34a':pct>=70?'#1a56db':'#d97706'}">${pct}%</span>
+      </div>
+    </div>
+
+    ${missing.length > 0 ? `
+    <!-- MISSING ALERT -->
+    <div class="rpt-missing-alert">
+      <div class="icon">⚠️</div>
+      <div>
+        <h3>${missing.length} Room${missing.length!==1?'s':''} Missing — Action Required</h3>
+        <p>The following rooms have not been fully completed. See breakdown below.</p>
+      </div>
+    </div>` : `
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px 18px;margin-bottom:22px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.3rem">✅</span>
+      <div><strong style="color:#16a34a">All rooms complete!</strong><p style="font-size:11px;color:#6b7280;margin-top:2px">Every evaluated room has passed all items.</p></div>
+    </div>`}
+
+    ${missing.length > 0 ? `
+    <!-- MISSING ROOMS — MAIN FOCUS -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">⚠️ Missing Rooms — by Room Type</div>
+      ${missingByType || '<p style="font-size:11px;color:#16a34a">No missing rooms.</p>'}
+    </div>` : ''}
+
+    <!-- BY ROOM TYPE -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">📊 Breakdown by Room Type</div>
+      <div style="background:white;border:1.5px solid #e5e7eb;border-radius:10px;overflow:hidden">
+        <table class="rpt-type-table">
+          <thead><tr><th>Room Type</th><th>Rooms</th><th>Progress</th><th>Status</th></tr></thead>
+          <tbody>${typeRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BY FLOOR -->
+    <div class="rpt-section">
+      <div class="rpt-section-title">🏢 Breakdown by Floor</div>
+      <div style="background:white;border:1.5px solid #e5e7eb;border-radius:10px;overflow:hidden">
+        <table class="rpt-type-table">
+          <thead><tr><th>Floor</th><th>Rooms</th><th>Progress</th><th>Status</th></tr></thead>
+          <tbody>${floorRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NOT REVIEWED -->
+    ${notReviewed.length ? `
+    <div class="rpt-section">
+      <div class="rpt-section-title">— Not Yet Reviewed (${notReviewed.length} rooms)</div>
+      ${notRevHTML}
+    </div>` : ''}
+
+    <div class="rpt-footer">
+      <div>JW Marriott Houston Downtown · Housekeeping Department · ${now}</div>
+      <div>${p.name} · Confidential</div>
+    </div>`;
+
+  document.getElementById('report-content').innerHTML = reportHTML;
+  document.getElementById('report-proj-label').textContent = `${p.icon||'📋'} ${p.name}`;
+  showScreen('report');
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+loadState();
+renderProjectsList();
+</script>
+</body>
+</html>
